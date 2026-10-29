@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#172033">
+<title>スポーツカー車高計算</title>
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--ink:#182235;--muted:#64748b;--line:#dbe2ea;--accent:#2563eb;--input:#fff8d9;--good:#e8f7ee}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+header{background:#172033;color:white;padding:18px 16px 16px}header h1{font-size:1.25rem;margin:0 0 4px}header p{font-size:.86rem;margin:0;color:#cbd5e1}
+main{max-width:1100px;margin:auto;padding:14px;display:grid;gap:14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 2px 8px #0f172a08}
+h2{font-size:1.05rem;margin:0 0 12px}.sub{font-size:.82rem;color:var(--muted);margin:-6px 0 12px}
+.axes{display:grid;grid-template-columns:1fr 1fr;gap:12px}.axistitle{font-weight:750;margin-bottom:8px}.field{display:grid;grid-template-columns:minmax(0,1fr) 105px;gap:8px;align-items:center;margin:8px 0}.field label{font-size:.87rem}.field input{width:100%;min-width:0;border:1px solid #e5c85b;background:var(--input);border-radius:8px;padding:10px 8px;font:inherit;text-align:right;color:var(--ink)}.unit{font-size:.75rem;color:var(--muted);margin-left:3px}
+.resultgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.result{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fbfcfe}.result .name{font-size:.78rem;color:var(--muted)}.result strong{font-size:1.15rem;font-variant-numeric:tabular-nums}.result small{color:var(--muted);margin-left:3px}
+table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:9px 7px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+.diagramwrap{background:#f8fafc;border:1px solid var(--line);border-radius:12px;overflow:hidden}svg{display:block;width:100%;height:auto;min-height:220px}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:8px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:9px;padding:11px 14px;background:var(--accent);color:white;font:inherit;font-weight:650}button.secondary{background:#e2e8f0;color:#172033}
+.note{font-size:.8rem;color:var(--muted);line-height:1.6}.warn{padding:10px;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:.82rem;margin-top:10px}
+@media(min-width:850px){main{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}.diagramcol{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:14px}.resultgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:420px){main{padding:9px;gap:10px}.panel{padding:11px}.axes{gap:8px}.field{grid-template-columns:minmax(0,1fr) 78px;gap:4px}.field label{font-size:.78rem}.field input{padding:9px 5px;font-size:.9rem}.result strong{font-size:1rem}.resultgrid{gap:6px}}
+</style>
+</head>
+<body>
+<header><h1>スポーツカー車高計算</h1><p>修正版Excelの計算式を反映したスマートフォン対応版</p></header>
+<main>
+<section class="panel wide">
+<h2>1. 入力項目</h2><p class="sub">黄色の欄を変更すると、計算結果と図が自動更新されます。</p>
+<div class="axes">
+<div><div class="axistitle">フロント</div><div id="frontFields"></div></div>
+<div><div class="axistitle">リア</div><div id="rearFields"></div></div>
+</div>
+<div class="actions"><button onclick="resetInputs()">初期値に戻す</button><button class="secondary" onclick="window.print()">印刷／PDF保存</button></div>
+</section>
+<section class="panel"><h2>2. 主な計算結果</h2><div id="mainResults" class="resultgrid"></div><div class="warn" id="warnings" hidden></div></section>
+<section class="panel"><h2>3. 計算結果一覧</h2><div id="tableResults"></div></section>
+<section class="panel wide"><h2>4. 図形で確認（側面イメージ）</h2><p class="sub">車高値・タイヤ外径・フェンダー隙間を視覚的に確認するための模式図です。実車のサスペンション軌跡を再現するCAD図ではありません。</p>
+<div class="diagramwrap"><svg id="diagram" viewBox="0 0 760 330" role="img" aria-label="前後の車高とタイヤの模式図"></svg></div>
+<div class="legend"><span><i class="dot" style="background:#2563eb"></i>フロント</span><span><i class="dot" style="background:#ea580c"></i>リア</span><span><i class="dot" style="background:#64748b"></i>地面・基準線</span></div>
+</section>
+<section class="panel wide"><h2>計算条件・注意事項</h2><p class="note">計算式はアップロードされたExcelの式を基本にJavaScriptへ移植しています。伸び車高値は、ジャッキアップ時などの伸び切り時におけるホイールリム下端からフェンダーまでの距離です。フェンダー隙間は、伸び車高値から伸び側のホイール移動量、タイヤサイドウォール高さ（タイヤ幅×扁平率）、ホイール径を差し引いて、タイヤ上辺とフェンダーの隙間として求めます。レバー比はExcelと同じく「ダンパーストロークに対するホイール移動量」の倍率として扱っています。軸重は1輪当たりの値です。タイヤ扁平率は 50 または 0.50 のどちらでも入力できます。結果は入力値・式の解釈に依存するため、実車の安全確認や走行前には元Excelと照合してください。</p></section>
+</main>
+<script>
+const defaults={
+front:{rate:14,preload:5,subRate:20,subLength:6,stroke:50,load:270,ratio:1.4,reboundHeight:545,width:195,aspect:0.5,rim:15},
+rear:{rate:14,preload:5,subRate:7.5,subLength:16,stroke:50,load:230,ratio:1.33,reboundHeight:545,width:195,aspect:0.5,rim:15}
+};
+const labels=[
+['rate','1. バネレート','kgf/mm'],['preload','2. プリロード','mm'],['subRate','3. サブスプリング バネレート','kgf/mm'],
+['subLength','4. サブスプリング作動長','mm'],['stroke','5. ダンパー有効ストローク','mm'],['load','6. 軸重（1輪当たり）','kg'],
+['ratio','7. レバー比','倍'],['reboundHeight','8. 伸び車高値','mm'],['width','9. タイヤ幅','mm'],
+['aspect','10. 扁平率','% / 0.5'],['rim','11. ホイールサイズ','inch']
+];
+function buildFields(){
+ for(const [ax,title] of [['front','フロント'],['rear','リア']]){
+  document.getElementById(ax+'Fields').innerHTML=labels.map(([key,label,unit])=>`<div class="field"><label for="${ax}_${key}">${label}<span class="unit">${unit}</span></label><input id="${ax}_${key}" type="number" inputmode="decimal" step="any" value="${defaults[ax][key]}" data-axis="${ax}" data-key="${key}"></div>`).join('');
+ }
+ document.querySelectorAll('input[data-axis]').forEach(el=>el.addEventListener('input',render));
+}
+function getInput(ax,key){const el=document.getElementById(ax+'_'+key);return el.value.trim()===''?NaN:Number(el.value)}
+function calc(ax){
+ const v={}; for(const [k] of labels)v[k]=getInput(ax,k);
+ const k=v.rate,p=v.preload,ks=v.subRate,L=v.subLength,S=v.stroke,W=v.load,r=v.ratio,H=v.reboundHeight;
+ const closeLoad=ks*L;
+ const combined=(k+ks)!==0?k*ks/(k+ks):NaN;
+ const a=L+closeLoad/k-p;
+ const closeStroke=Math.max(0,a);
+ const b=p-(L+closeLoad/k);
+ const preloadLoad=(a>=0?p*combined:Math.max(0,b)*k+closeLoad);
+ const allowable=(S-closeStroke)*k+closeStroke*combined+preloadLoad;
+ const oneG=W*r;
+ const reserve=Math.max(0,allowable-oneG); // Excel J8/K8: LET(a, 許容耐荷重-1G荷重, IF(a<0,0,a))
+ const c=closeLoad-oneG;
+ const bumpStroke=c>0?(reserve-c)/k+c/combined:reserve/k;
+ const reboundStroke=S-bumpStroke;
+ const reboundTire=r*reboundStroke;
+ const bumpTire=r*S;
+ let aspect=v.aspect>1?v.aspect/100:v.aspect;
+ const tireOD=v.width*aspect*2+v.rim*25.4;
+ const rideHeight=H-reboundTire;
+ const bumpHeight=H-bumpTire;
+ const rimD=v.rim*25.4;
+ const gap=H-reboundTire-v.width*aspect-rimD; // Excel: D9-J11-D10*D11-D12*25.4
+ return {...v,closeLoad,combined,closeStroke,preloadLoad,allowable,oneG,reserve,bumpStroke,reboundStroke,reboundTire,bumpTire,tireOD,rideHeight,bumpHeight,gap};
+}
+const fmt=(n,d=1)=>Number.isFinite(n)?n.toLocaleString('ja-JP',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+function render(){
+ const F=calc('front'),R=calc('rear');
+ const rows=[
+ ['密着荷重','closeLoad','kg'],['合成レート','combined','kgf/mm'],['密着ストローク','closeStroke','mm'],['プリロード荷重','preloadLoad','kgf'],
+ ['許容耐荷重','allowable','kgf'],['1G荷重','oneG','kgf'],['1G荷重差引き許容荷重','reserve','kgf'],
+ ['縮みストローク','bumpStroke','mm'],['伸びストローク','reboundStroke','mm'],['伸びタイヤ移動','reboundTire','mm'],
+ ['19. 車高値','rideHeight','mm'],['20. 縮み車高値','bumpHeight','mm'],['21. 伸び車高値','reboundHeight','mm'],
+ ['タイヤ外径','tireOD','mm'],['フェンダー隙間','gap','mm']
+ ];
+ document.getElementById('mainResults').innerHTML=[
+  ['フロント 車高値',F.rideHeight,'mm'],['リア 車高値',R.rideHeight,'mm'],['前後車高差',F.rideHeight-R.rideHeight,'mm'],
+  ['フロント フェンダー隙間',F.gap,'mm'],['リア フェンダー隙間',R.gap,'mm'],['前後差（縮み車高）',F.bumpHeight-R.bumpHeight,'mm']
+ ].map(x=>`<div class="result"><div class="name">${x[0]}</div><strong>${fmt(x[1])}</strong><small>${x[2]}</small></div>`).join('');
+ document.getElementById('tableResults').innerHTML=`<table><thead><tr><th>計算項目</th><th>フロント</th><th>リア</th><th>単位</th></tr></thead><tbody>${rows.map(([name,key,unit])=>`<tr><td>${name}</td><td>${fmt(F[key])}</td><td>${fmt(R[key])}</td><td>${unit}</td></tr>`).join('')}</tbody></table>`;
+ const warning=[];
+ for(const [name,v] of [['フロント',F],['リア',R]]){
+  if(!Number.isFinite(v.rate)||v.rate<=0)warning.push(name+'のメインバネレートは0より大きい値にしてください。');
+  if(v.bumpStroke<0||v.bumpStroke>v.stroke)warning.push(name+'の縮みストロークが有効ストローク範囲外です。入力値・計算式を確認してください。');
+  if(v.reserve<0)warning.push(name+'は1G荷重が計算上の許容耐荷重を超えています。');
+ }
+ const we=document.getElementById('warnings');we.hidden=!warning.length;we.textContent=warning.join(' ');
+ draw(F,R);
+}
+function draw(F,R){
+ const svg=document.getElementById('diagram');
+ const W=760,H=330, ground=282;
+ const vals=[F,R], centers=[220,545], colors=['#2563eb','#ea580c'];
+ const maxOD=Math.max(F.tireOD,R.tireOD,1);
+ const scale=Math.min(0.23,145/maxOD);
+ let s=`<rect x="0" y="0" width="${W}" height="${H}" fill="#f8fafc"/><line x1="25" y1="${ground}" x2="735" y2="${ground}" stroke="#64748b" stroke-width="2"/><text x="30" y="305" fill="#64748b" font-size="12">地面（模式図）</text>`;
+ vals.forEach((v,i)=>{
+  const x=centers[i], tireR=Math.max(1,v.tireOD*scale/2), rimR=Math.max(1,v.rim*25.4*scale/2);
+  const tireTop=ground-2*tireR;
+  const gapPx=v.gap>0?Math.max(v.gap*scale,3):v.gap*scale;
+  const fenderTop=tireTop-gapPx;
+  const outer=tireR+12;
+  const left=x-outer, right=x+outer;
+  const archBottom=ground- Math.max(10,tireR*.30);
+  // Tunnel-shaped fender arch. The crown is placed from the calculated tire-top gap.
+  s+=`<text x="${x}" y="25" text-anchor="middle" font-size="16" font-weight="700" fill="${colors[i]}">${i===0?'フロント':'リア'}</text>`;
+  s+=`<circle cx="${x}" cy="${ground-tireR}" r="${tireR}" fill="#dbe2ea" stroke="#334155" stroke-width="3"/>`;
+  s+=`<circle cx="${x}" cy="${ground-tireR}" r="${rimR}" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>`;
+  s+=`<circle cx="${x}" cy="${ground-tireR}" r="${Math.max(2,rimR*.12)}" fill="#94a3b8"/>`;
+  // Semi-circular fender arch: its apex is positioned from the calculated tire-top gap.
+  const crownY=fenderTop;
+  const archR=outer;
+  const archBaseY=crownY+archR;
+  const shoulderY=Math.min(ground-12, archBaseY+Math.max(18,tireR*.35));
+  s+=`<path d="M ${left} ${shoulderY} L ${left} ${archBaseY} A ${archR} ${archR} 0 0 1 ${right} ${archBaseY} L ${right} ${shoulderY}" fill="none" stroke="${colors[i]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  s+=`<line x1="${x+outer+12}" y1="${fenderTop}" x2="${x+outer+12}" y2="${tireTop}" stroke="${colors[i]}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  s+=`<text x="${x}" y="52" text-anchor="middle" font-size="12" fill="#334155">車高値 ${fmt(v.rideHeight)} mm</text>`;
+  s+=`<text x="${x}" y="70" text-anchor="middle" font-size="12" fill="#334155">タイヤ外径 ${fmt(v.tireOD)} mm</text>`;
+  s+=`<text x="${x}" y="88" text-anchor="middle" font-size="12" fill="${colors[i]}">隙間 ${fmt(v.gap)} mm</text>`;
+ });
+ s+=`<path d="M 105 165 L 655 165" stroke="#94a3b8" stroke-dasharray="5 5" stroke-width="1"/><text x="380" y="154" text-anchor="middle" font-size="11" fill="#64748b">正の隙間ではフェンダーの頂点がタイヤ上辺より上</text>`;
+ svg.innerHTML=s;
+}
+function resetInputs(){for(const [ax,values] of Object.entries(defaults))for(const [key,value] of Object.entries(values))document.getElementById(ax+'_'+key).value=value;render()}
+buildFields();render();
+</script>
+</body>
+</html>
