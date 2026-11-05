@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172033">
-<title>スポーツカー車高計算</title>
+<title>マイカー車高計算</title>
 <style>
 :root{--bg:#f3f5f8;--card:#fff;--ink:#182235;--muted:#64748b;--line:#dbe2ea;--accent:#2563eb;--input:#fff8d9;--good:#e8f7ee}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
@@ -22,7 +22,7 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:9px 7px
 </style>
 </head>
 <body>
-<header><h1>スポーツカー車高計算</h1><p>修正版Excelの計算式を反映したスマートフォン対応版</p></header>
+<header><h1>マイカー車高計算</h1><p>サスペンションを計算式で見るサイト</p></header>
 <main>
 <section class="panel wide">
 <h2>1. 入力項目</h2><p class="sub">黄色の欄を変更すると、計算結果と図が自動更新されます。</p>
@@ -38,7 +38,7 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:9px 7px
 <div class="diagramwrap"><svg id="diagram" viewBox="0 0 760 330" role="img" aria-label="前後の車高とタイヤの模式図"></svg></div>
 <div class="legend"><span><i class="dot" style="background:#2563eb"></i>フロント</span><span><i class="dot" style="background:#ea580c"></i>リア</span><span><i class="dot" style="background:#64748b"></i>地面・基準線</span></div>
 </section>
-<section class="panel wide"><h2>計算条件・注意事項</h2><p class="note">計算式はアップロードされたExcelの式を基本にJavaScriptへ移植しています。伸び車高値は、ジャッキアップ時などの伸び切り時におけるホイールリム下端からフェンダーまでの距離です。フェンダー隙間は、伸び車高値から伸び側のホイール移動量、タイヤサイドウォール高さ（タイヤ幅×扁平率）、ホイール径を差し引いて、タイヤ上辺とフェンダーの隙間として求めます。レバー比はExcelと同じく「ダンパーストロークに対するホイール移動量」の倍率として扱っています。軸重は1輪当たりの値です。タイヤ扁平率は 50 または 0.50 のどちらでも入力できます。結果は入力値・式の解釈に依存するため、実車の安全確認や走行前には元Excelと照合してください。</p></section>
+<section class="panel wide"><h2>計算条件・注意事項</h2><p class="note">スマホで車高調整ができたらいいなと思って作成しました。伸び車高値は、ジャッキアップ時などの伸び切り時におけるホイールリム下端からフェンダーまでの距離です。フェンダー隙間は、伸び車高値から伸び側のホイール移動量、タイヤサイドウォール高さ（タイヤ幅×扁平率）、ホイール径を差し引いて、タイヤ上辺とフェンダーの隙間として求めます。レバー比はExcelと同じく「ダンパーストロークに対するホイール移動量」の倍率として扱っています。軸重は1輪当たりの値です。タイヤ扁平率は 50 または 0.50 のどちらでも入力できます。結果は入力値・式の解釈に依存するため、実車と誤差が発生します。作成者：Xアカウント　@groovy_car_</p></section>
 </main>
 <script>
 const defaults={
